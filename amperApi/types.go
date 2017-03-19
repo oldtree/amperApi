@@ -31,6 +31,24 @@ const (
 	AmperEventsTypeSilence = "silence"
 )
 
+/*
+Events define musical regions or periods of silence within a timeline. There are two types of events:
+region
+silence
+region events instruct the system to compose music for that region based on the time and descriptor values,
+ as well as optional attributes such as tempo and transition.
+NOTE: Each region requires a unique user-defined numerical identifier.
+ This identifier only has to be unique within the project.
+ Simple one- or two-digit integer identifiers are usually sufficient for most projects.
+silence events instruct the system to insert silence into the timeline for the duration of that event.
+Events are sequential. One event ends when another begins.
+ For that reason, each timeline must end with a silence event.
+*/
+const (
+	AmperEventTypeRegion  = "region"
+	AmperEventTypeSilence = "silence"
+)
+
 type AmperRegion struct {
 	Event      string              `json:"event"`      //Text, required. This must be region.
 	Id         int64               `jsno:"id"`         //Number, required. A unique identifier.
@@ -80,4 +98,37 @@ const (
 type AmperHits struct {
 	Hit  string `json:"hit"`
 	Time int64  `json:"time"`
+}
+
+/*
+Timelines define the musical regions for each project. Each timeline consists of:
+	Event statements, which define musical regions or periods of silence
+	Descriptors, which define the mood, style, etc. for each musical region.
+	Optional tempo designations for each musical region. If a tempo is not explicitly defined, the system will use an internally generated tempo.
+	Optional end_type instructions, which control how to transition from one musical region to the next, or from a musical region to a period of silence. If an end_type is not explicitly defined, the system will use an internally generated end_type.
+	Optional hits which allow for special musical emphasis at a specific point in time.
+
+Important considerations:
+	The final event must be a silence.
+	hit events can happen anywhere, including between silence events.
+	The exact times of events may be altered slightly by the Composer to make them align with musical time.
+	If a timeline is unparsable for any reason, the Composer will return a timeline of its default duration with a random descriptor.
+*/
+
+type AmperTimelines struct {
+	TimelineSlice []*AmperRegion `json:"timelines"`
+}
+
+/*
+Projects are a container for system interactions. They primarily define the musical timeline.
+
+Projects can also accept an optional user-defined name.
+If a user-defined name is not supplied, the system will generate one. However,
+user-defined project names must be completely unique within that user account.
+Duplicate project names will return an error.
+*/
+type AmperProject struct {
+	ProjectName  string          `jsno:"projectname"`
+	UserName     string          `jsno:"username"`
+	AmperProject *AmperTimelines `json:"project"`
 }
