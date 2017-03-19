@@ -1,5 +1,9 @@
 package amperApi
 
+import "time"
+
+const ProjectNamingNote = "All object and property names, including all user-defined names, must be all lower case with underscores separating each word (i.e., lowercase_snake_case)."
+
 type Amper interface {
 }
 
@@ -11,6 +15,16 @@ type AmperInfoMessages struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
 	Details string `json:"details"`
+}
+
+type ApmerSingleObjectResp struct {
+	Id      int    `jsno:"id"`
+	PropOne string `json:"prop_one"`
+	PropTwo string `json:"prop_two"`
+}
+
+type ApmerSingleObjectListResp struct {
+	MultipleObject *ApmerSingleObjectResp `json:"objects"`
 }
 
 const (
@@ -64,9 +78,45 @@ const (
 	AmperCopyFeatureTyperRythm  = "rhythm"
 )
 
+/*
+In order to maintain rhythmic or harmonic continuity between regions,
+you can specify that the rhythm or harmony in a region be copied from another specified region.
+	type: Text, required. Which parameter of music to copy.
+	source_id: Number required. The id of the region to copy from.
+Valid options for type are:
+	harmony
+	rhythm
+*/
 type AmperCopyFeature struct {
 	Types    string `json:"type"`
 	SourceId string `json:"source_id"`
+}
+
+/*
+The end_type of a region specifies how the ending portion of a region will be handled by the Composer.
+There are two options: ending and transition.
+	time: Number, required. The time, in seconds, at which the end_type will take effect.
+	end_type: Text, required. Specifies whether the end_type is an ending or transition.
+	type: Text, required. The specific action to perform for the end_type.
+	          Valid options depend on which end_type the object is.
+
+Valid ending types:
+	ringout: At the given time, all instruments will play a final note,
+	which will last until the region ends.
+
+Valid transition types:
+	tempo_ramp: At the given time, start a tempo ramp
+			(from the tempo of the current region to the tempo of the next region)
+			 which ends at the start of the next region.
+	cut: Do nothing. The next region begins abruptly at the end of the current region.
+
+Note that transitions are only valid if the current region is followed by an other region.
+Invalid transitions will be converted to ringouts.
+*/
+type ApmerEndType struct {
+	Time    int64  `json:"time"`
+	EndType string `json:"end_type"`
+	Type    string `json:"type"`
 }
 
 //AmperHitType
@@ -94,7 +144,8 @@ const (
 )
 
 //Hits are optional statements, which allow for special musical emphasis at a specific point in time.
-
+//		hit: Text, required. The name of the hit recognized by the Composer.
+//		time: Number, required. The time at which the hit will occur.
 type AmperHits struct {
 	Hit  string `json:"hit"`
 	Time int64  `json:"time"`
@@ -113,6 +164,8 @@ Important considerations:
 	hit events can happen anywhere, including between silence events.
 	The exact times of events may be altered slightly by the Composer to make them align with musical time.
 	If a timeline is unparsable for any reason, the Composer will return a timeline of its default duration with a random descriptor.
+
+We suggest limiting timelines to five minutes in length or less. Lengths greater than five minutes may not be supported.
 */
 
 type AmperTimelines struct {
@@ -128,7 +181,31 @@ user-defined project names must be completely unique within that user account.
 Duplicate project names will return an error.
 */
 type AmperProject struct {
-	ProjectName  string          `jsno:"projectname"`
-	UserName     string          `jsno:"username"`
-	AmperProject *AmperTimelines `json:"project"`
+	Title                string          `jsno:"title"`
+	AmperProjectTimeline *AmperTimelines `json:"timeline"`
+}
+
+type AmperDescriptor struct {
+	Id   string `json:"id"`
+	Name string `jsno:"name"`
+}
+
+type CreateAmperProjectResp struct {
+	Id              int         `jsno:"id"`
+	Status          string      `json:"status"`
+	ProgressPercent string      `jsno:"progress_percent"`
+	Files           interface{} `json:"files"`
+	Created_at      time.Time   `json:"date_created"`
+	Updated_at      time.Time   `jsno:"date_updated"`
+}
+
+type GetProjectInfoFile struct {
+	Id          int       `jsno:"id"`
+	ContentTye  string    `json:"content_type"`
+	BitSample   int       `json:"bits_sample"`
+	FrequencyHz int       `json:"frequency_hz"`
+	KbitsSecond int       `json:"kbits_second"`
+	DownloadUrl string    `json:"download_url"`
+	SizeBytes   int       `json:"size_bytes"`
+	Created_at  time.Time `json:"date_created"`
 }
